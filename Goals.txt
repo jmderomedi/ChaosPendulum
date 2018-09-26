@@ -1,0 +1,5 @@
+9/19/2018
+-To complete the stepper motor code and possibly start OLed
+
+9/26/2018
+-To have motor and Oled work together and find why using stepper motor instead of motor and encoder

@@ -18,14 +18,15 @@
 Stepper motor(16, 17);
 Encoder myEnc(23, 22);
 TeensyView oled(PIN_RESET, PIN_DC, PIN_CS, PIN_SCK, PIN_MOSI);
-elapsedMillis timeElapsed;
+
 StepControl<> controller;
 
+//elapsedMillis timeElapsed;
 const int ENCODERBUTTON = 18;
 int encoderPos = 0;
 
 void setup() {
-  Serial.begin(9600);
+  //Serial.begin(9600);
   pinMode(ENCODERBUTTON, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(ENCODERBUTTON), motorSpeedChange, FALLING);
 

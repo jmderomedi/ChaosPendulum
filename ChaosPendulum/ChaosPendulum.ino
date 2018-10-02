@@ -37,7 +37,7 @@ float degPerPulse = 0.0;
 int motorSpeed = 0;
 
 void setup() {
-  Serial.begin(128000);
+  Serial.begin(115200);
   pinMode(ENCODERBUTTON, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(ENCODERBUTTON), motorSpeedChange, FALLING);
 
@@ -45,7 +45,7 @@ void setup() {
   oled.clear(ALL);
 
   motor.setAcceleration(300000);
-  motor.setMaxSpeed(1102);
+  motor.setMaxSpeed(248);
   controller.rotateAsync(motor);
 
   degPerPulse = 360.0 / (float)PPR;
@@ -57,6 +57,8 @@ void setup() {
   //  controller.move(motor);
   //  Serial.println(timeElapsed);
   //  Serial.println(motor.getPosition());
+  Serial.println("CLEARDATA");
+  Serial.println("LABEL,Time,Omega");
 
 }//END SETUP
 
@@ -66,9 +68,10 @@ void loop() {
   float fWOmega = flyWheelOmega();
   motorSpeed = buttonEncReading();
   screenWriting(motorSpeed);
-
+  
+  Serial.print("DATA,TIME,");
   Serial.println(fWOmega);
-  Serial.print("  ");
+
 
 }//END LOOP
 
@@ -84,6 +87,7 @@ int countMovement(float omegaValue) {
   } else if (omegaValue < 0) {
     movementCounter--;
   }
+  return movementCounter;
 }//END CountMovement
 
 //---------------------------------------------------------------------------
@@ -131,8 +135,8 @@ float flyWheelOmega() {
 */
 int buttonEncReading() {
   int encPosition = buttonEnc.read();
-  int maxPosition = 200;
-  int minPosition = -200;
+  int maxPosition = 300;
+  int minPosition = -300;
 
   if (encPosition < minPosition) {
     encPosition = minPosition;
@@ -144,7 +148,10 @@ int buttonEncReading() {
     //Forces the encoder to have a max value
     buttonEnc.write(maxPosition);
   }
-  return encPosition = map(encPosition, minPosition, maxPosition, 5, 2000);
+
+  encPosition = map(encPosition, minPosition, maxPosition, 120, 500);
+  return encPosition;
+
 }//END buttonEncReading
 
 //---------------------------------------------------------------------------
@@ -203,4 +210,5 @@ void motorSpeedChange() {
   motor.setMaxSpeed(motorSpeed);
   controller.rotateAsync(motor);
 }//END MotorSpeedChange
+
 

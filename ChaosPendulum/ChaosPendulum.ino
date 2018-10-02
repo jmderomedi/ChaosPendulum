@@ -21,7 +21,7 @@
 
 Stepper motor(16, 17);
 Encoder buttonEnc(23, 22);
-Encoder flyWheelEnc(5, 6);
+Encoder flyWheelEnc(19, 20);
 TeensyView oled(PIN_RESET, PIN_DC, PIN_CS, PIN_SCK, PIN_MOSI);
 
 //SavLayFilter sgFilter();
@@ -68,6 +68,7 @@ void loop() {
   screenWriting(motorSpeed);
 
   Serial.println(fWOmega);
+  Serial.print("  ");
 
 }//END LOOP
 

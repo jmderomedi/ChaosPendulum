@@ -1,3 +1,5 @@
+### V (cc) = 15V and I(limit) = completely turned down ###
+
 At v = 2000 steps/sec and a = 300000 steps/sec*sec
 	It takes on average 3.75% longer to complete 1600 steps than theoretical
 	Fastest speed without any noticable slippage

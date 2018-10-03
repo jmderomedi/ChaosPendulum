@@ -1,6 +1,6 @@
 #define ENCODER_OPTIMIZE_INTERRUPTS
 
-//#include "SavLayFilter.h"
+#include <SavLayFilter.h>
 #include <StepControl.h>
 #include <elapsedMillis.h>
 #include <font5x7.h>
@@ -21,7 +21,7 @@
 
 Stepper motor(16, 17);
 Encoder buttonEnc(23, 22);
-Encoder flyWheelEnc(19, 20);
+Encoder flyWheelEnc(7, 6);
 TeensyView oled(PIN_RESET, PIN_DC, PIN_CS, PIN_SCK, PIN_MOSI);
 
 //SavLayFilter sgFilter();

@@ -1,6 +1,6 @@
 #define ENCODER_OPTIMIZE_INTERRUPTS
 
-#include <SavLayFilter.h>
+//#include <SavLayFilter.h>
 #include <StepControl.h>
 #include <elapsedMillis.h>
 #include <font5x7.h>
@@ -19,8 +19,8 @@
 #define PIN_SCK   13
 #define PIN_MOSI  11
 
-Stepper motor(16, 17);
-Encoder buttonEnc(23, 22);
+Stepper motor(17, 16);
+Encoder buttonEnc(22, 23);
 Encoder flyWheelEnc(7, 6);
 TeensyView oled(PIN_RESET, PIN_DC, PIN_CS, PIN_SCK, PIN_MOSI);
 
@@ -30,19 +30,24 @@ StepControl<> controller;
 elapsedMillis timeElapsed;
 elapsedMicros flyWheelTimer;
 
-const int PPR = 4096; //Pulses Per Revolution
+const int PPR = 2048; //Pulses Per Revolution
 const int ENCODERBUTTON = 18;
 
+float fWOutput = 0.0;
 float degPerPulse = 0.0;
 int motorSpeed = 0;
 
+float deltaPhi = 0.0;
+float deltaTime = 0.0;
+
+
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(19200);
   pinMode(ENCODERBUTTON, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(ENCODERBUTTON), motorSpeedChange, FALLING);
 
   oled.begin();
-  oled.clear(ALL);
+  oled.clear(PAGE);
 
   motor.setAcceleration(300000);
   motor.setMaxSpeed(248);
@@ -58,20 +63,26 @@ void setup() {
   //  Serial.println(timeElapsed);
   //  Serial.println(motor.getPosition());
   Serial.println("CLEARDATA");
-  Serial.println("LABEL,Time,Omega");
+  Serial.println("LABEL,count");
 
 }//END SETUP
 
+long countCount = 0;
 void loop() {
-  oled.clear(PAGE);
+  //oled.clear(PAGE);
 
   float fWOmega = flyWheelOmega();
   motorSpeed = buttonEncReading();
   screenWriting(motorSpeed);
-  
-  Serial.print("DATA,TIME,");
-  Serial.println(fWOmega);
 
+  countCount++;
+
+  Serial.print("DATA,,");
+  Serial.print(countCount);
+  Serial.print("  ,  ");
+  Serial.print(fWOutput);
+  Serial.print("  ,  ");
+  Serial.println(fWOmega);
 
 }//END LOOP
 
@@ -95,28 +106,29 @@ int countMovement(float omegaValue) {
    Reads the encoder in the fly wheel and calculates the omega of the flywheel
    Returns the omega value of the flywheel
 */
-long oldPosition = 0;
-long newPosition = 0;
+
+long oldPosition = -999;
 long oldTime = 0;
-long newTime = 0;
+float omega = 1.0;
 
 float flyWheelOmega() {
-  float deltaPhi = 0.0;
-  float deltaTime = 0.0;
-  float omega = 0.0;
-  float phi = 0.0;
-  //float t = 0.0;
 
-  newPosition = flyWheelEnc.read();
+  float newPosition = flyWheelEnc.read();
+  //For printing position of flywheel
+  fWOutput = newPosition;
 
   if (newPosition != oldPosition) {
-    newTime = flyWheelTimer;
+    long newTime = flyWheelTimer;
 
     //Finding the omega of the flywheel
-    deltaPhi = degPerPulse * (float)(newPosition - oldPosition);
-    deltaTime = (float)(newTime - oldTime) / 1000000.0;
+    deltaPhi = degPerPulse * (newPosition - oldPosition);
+    deltaTime = float(newTime - oldTime) / float(1000000.0);
+
     omega = deltaPhi / deltaTime;
 
+//    Serial.print(deltaTime); Serial.print("    ");
+//    Serial.print(deltaPhi); Serial.print("    ");
+//    Serial.println(omega);
     //phi = degPerPulse * (float)oldPosition + deltaPhi / 2.0; //The current angle of the plate
     //t = (float)oldTime / 1000000.0 + deltaTime / 2.0; //The time of reading in seconds
 
@@ -124,7 +136,6 @@ float flyWheelOmega() {
     oldTime = newTime;
     oldPosition = newPosition;
   }
-
   return omega;
 }//END FlyWheelRead
 
@@ -135,6 +146,7 @@ float flyWheelOmega() {
 */
 int buttonEncReading() {
   int encPosition = buttonEnc.read();
+
   int maxPosition = 300;
   int minPosition = -300;
 
@@ -162,40 +174,45 @@ int buttonEncReading() {
 float newMotorOmega = 31.48;
 bool speedChange = false;
 bool newOmega = false;
+int lastPosition = -999;
 
 void screenWriting(int motSpeed) {
-  //Finds the RPM of the motor for display
-  float rpm = (((motSpeed * 60) * 1.8) / 360);
-  //Finds the rotational frequency of the motor
-  float omega = (((rpm / 60) * 360) * M_PI) / 180;
 
-  //Allows the LCD to only change the omega value on button push
-  if (speedChange) {
-    newMotorOmega = omega;
-    speedChange = false;
-    newOmega = true;
-  } else {
-    omega = newMotorOmega;
-    newOmega = false;
-  }
+  if (motSpeed == lastPosition) {
+    //Finds the RPM of the motor for display
+    float rpm = (((motSpeed * 60) * 1.8) / 360);
+    //Finds the rotational frequency of the motor
+    float omega = (((rpm / 60) * 360) * M_PI) / 180;
 
-  oled.setFontType(1);
-  oled.setCursor(0, 0);
-  oled.print("RPM:");
-  oled.setFontType(0);
-  oled.setCursor(40, 4);
-  oled.print(rpm);
-  oled.setFontType(1);
-  oled.setCursor(0, 15);
-  oled.print("Omega: ");
-  oled.setCursor(59, 20);
-  oled.setFontType(0);
-  if (newOmega) {
-    oled.print(newMotorOmega);
-  } else {
-    oled.print(omega);
+    //Allows the LCD to only change the omega value on button push
+    if (speedChange) {
+      newMotorOmega = omega;
+      speedChange = false;
+      newOmega = true;
+    } else {
+      omega = newMotorOmega;
+      newOmega = false;
+    }
+
+    oled.setFontType(1);
+    oled.setCursor(0, 0);
+    oled.print("RPM:");
+    oled.setFontType(0);
+    oled.setCursor(40, 4);
+    oled.print(rpm);
+    oled.setFontType(1);
+    oled.setCursor(0, 15);
+    oled.print("Omega: ");
+    oled.setCursor(59, 20);
+    oled.setFontType(0);
+    if (newOmega) {
+      oled.print(newMotorOmega);
+    } else {
+      oled.print(omega);
+    }
+    oled.display();
   }
-  oled.display();
+  lastPosition = motSpeed;
 }//END ScreenWriting
 
 //---------------------------------------------------------------------------

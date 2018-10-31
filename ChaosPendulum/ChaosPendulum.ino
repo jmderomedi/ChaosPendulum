@@ -10,7 +10,7 @@
 #include <TeensyView.h>
 #include <Encoder.h>
 #include <Wire.h>
-#include <AccelStepper.h>
+//#include <AccelStepper.h>
 #include <math.h>
 
 #define PIN_RESET 15
@@ -23,6 +23,7 @@ Stepper motor(17, 16);
 Encoder buttonEnc(22, 23);
 Encoder flyWheelEnc(7, 6);
 TeensyView oled(PIN_RESET, PIN_DC, PIN_CS, PIN_SCK, PIN_MOSI);
+
 
 //SavLayFilter sgFilter();
 StepControl<> controller;
@@ -40,11 +41,10 @@ int motorSpeed = 0;
 float deltaPhi = 0.0;
 float deltaTime = 0.0;
 
-
 void setup() {
   Serial.begin(19200);
   pinMode(ENCODERBUTTON, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(ENCODERBUTTON), motorSpeedChange, FALLING);
+  attachInterrupt(digitalPinToInterrupt(ENCODERBUTTON), interuptHandler, FALLING);
 
   oled.begin();
   oled.clear(PAGE);
@@ -62,8 +62,8 @@ void setup() {
   //  controller.move(motor);
   //  Serial.println(timeElapsed);
   //  Serial.println(motor.getPosition());
-  Serial.println("CLEARDATA");
-  Serial.println("LABEL,count");
+  //Serial.println("CLEARDATA");
+  //Serial.println("LABEL,count");
 
 }//END SETUP
 
@@ -77,12 +77,12 @@ void loop() {
 
   countCount++;
 
-  Serial.print("DATA,,");
-  Serial.print(countCount);
-  Serial.print("  ,  ");
-  Serial.print(fWOutput);
-  Serial.print("  ,  ");
-  Serial.println(fWOmega);
+  //Serial.print("DATA,,");
+  //Serial.print(countCount);
+  //Serial.print("  ,  ");
+  // Serial.print(fWOutput);
+  //Serial.print(",");
+  //Serial.println(fWOmega);
 
 }//END LOOP
 
@@ -115,7 +115,9 @@ float flyWheelOmega() {
 
   float newPosition = flyWheelEnc.read();
   //For printing position of flywheel
-  fWOutput = newPosition;
+
+  //Should return the angle of the flywheel
+  fWOutput = newPosition * degPerPulse;
 
   if (newPosition != oldPosition) {
     long newTime = flyWheelTimer;
@@ -126,9 +128,9 @@ float flyWheelOmega() {
 
     omega = deltaPhi / deltaTime;
 
-//    Serial.print(deltaTime); Serial.print("    ");
-//    Serial.print(deltaPhi); Serial.print("    ");
-//    Serial.println(omega);
+    //    Serial.print(deltaTime); Serial.print("    ");
+    //    Serial.print(deltaPhi); Serial.print("    ");
+    //    Serial.println(omega);
     //phi = degPerPulse * (float)oldPosition + deltaPhi / 2.0; //The current angle of the plate
     //t = (float)oldTime / 1000000.0 + deltaTime / 2.0; //The time of reading in seconds
 
@@ -217,15 +219,66 @@ void screenWriting(int motSpeed) {
 
 //---------------------------------------------------------------------------
 /**
-   Called when the interupt is triggered from the encoder button
-   Stops the motor and waits for return
    Sets the new speed and starts with immeditate return
 */
 void motorSpeedChange() {
-  speedChange = true;
-  controller.stop();
-  motor.setMaxSpeed(motorSpeed);
+  Serial.println("Inside motorReset()");
   controller.rotateAsync(motor);
 }//END MotorSpeedChange
 
+//---------------------------------------------------------------------------
+/**
+   Tells the interupt which function to call depending on the the times the button has been pushed
+   Inlcudes a debounder to deal with the mechanical button
+*/
+bool oneButtonClick = false;
+unsigned long lastInterupt = 0;
+
+void interuptHandler() {
+  unsigned long interupt = millis();
+
+  //If a interupt happens before 200 milliseconds, ignore it
+  if (interupt - lastInterupt > 200) {
+    Serial.println("Inside interuptHandler");
+    speedChange = true;
+    controller.stop();
+    motor.setMaxSpeed(motorSpeed);
+    oneButtonClick = !oneButtonClick;
+
+    if (oneButtonClick == true) {
+      motorReset();
+    } else {
+      motorSpeedChange();
+    }
+    
+    lastInterupt = interupt;
+  }
+}
+
+//---------------------------------------------------------------------------
+/**
+   Moves the motor with the encoder to be able to set the motor to reset point
+*/
+int lastEncPosition = 0;
+
+void motorReset() {
+  Serial.println("Inside motorReset()");
+
+  int encPosition = buttonEnc.read();
+  int motorPosition = motor.getPosition();
+  Serial.print(motorPosition);
+  Serial.print("  ,  ");
+  Serial.println(encPosition);
+  Serial.println("");
+  if (encPosition > lastEncPosition) {
+    motorPosition += 100;
+    controller.move(motor);
+    Serial.println("Return from greater then move");
+  } else if (encPosition < lastEncPosition) {
+    motorPosition += -100;
+    controller.move(motor);
+    Serial.println("Return from less then move");
+  }
+  lastEncPosition = encPosition;
+}
 

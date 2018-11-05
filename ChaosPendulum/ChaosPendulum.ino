@@ -1,4 +1,4 @@
-#define ENCODER_OPTIMIZE_INTERRUPTS
+//#define ENCODER_OPTIMIZE_INTERRUPTS
 
 //#include <SavLayFilter.h>
 #include <StepControl.h>
@@ -31,7 +31,7 @@ StepControl<> controller;
 elapsedMillis timeElapsed;
 elapsedMicros flyWheelTimer;
 
-const int PPR = 2048; //Pulses Per Revolution
+const int PPR = 4096;
 const int ENCODERBUTTON = 18;
 
 float fWOutput = 0.0;
@@ -80,9 +80,9 @@ void loop() {
   //Serial.print("DATA,,");
   //Serial.print(countCount);
   //Serial.print("  ,  ");
-  // Serial.print(fWOutput);
-  //Serial.print(",");
-  //Serial.println(fWOmega);
+  Serial.print(fWOutput);
+  Serial.print(",");
+  Serial.println(fWOmega);
 
 }//END LOOP
 
@@ -107,7 +107,7 @@ int countMovement(float omegaValue) {
    Returns the omega value of the flywheel
 */
 
-long oldPosition = -999;
+long oldPosition = 999;
 long oldTime = 0;
 float omega = 1.0;
 
@@ -116,14 +116,14 @@ float flyWheelOmega() {
   float newPosition = flyWheelEnc.read();
   //For printing position of flywheel
 
-  //Should return the angle of the flywheel
+  //Should return the current angle of the flywheel
   fWOutput = newPosition * degPerPulse;
 
   if (newPosition != oldPosition) {
-    long newTime = flyWheelTimer;
-
     //Finding the omega of the flywheel
     deltaPhi = degPerPulse * (newPosition - oldPosition);
+
+    long newTime = flyWheelTimer;
     deltaTime = float(newTime - oldTime) / float(1000000.0);
 
     omega = deltaPhi / deltaTime;
@@ -149,6 +149,7 @@ float flyWheelOmega() {
 int buttonEncReading() {
   int encPosition = buttonEnc.read();
 
+  noInterrupts();
   int maxPosition = 300;
   int minPosition = -300;
 
@@ -163,7 +164,8 @@ int buttonEncReading() {
     buttonEnc.write(maxPosition);
   }
 
-  encPosition = map(encPosition, minPosition, maxPosition, 120, 500);
+  encPosition = map(encPosition, minPosition, maxPosition, 120, 400);
+  interrupts();
   return encPosition;
 
 }//END buttonEncReading
@@ -243,7 +245,7 @@ void interuptHandler() {
     speedChange = true;
     controller.stop();
     motor.setMaxSpeed(motorSpeed);
-    oneButtonClick = !oneButtonClick;
+    //oneButtonClick = !oneButtonClick;
 
     if (oneButtonClick == true) {
       motorReset();

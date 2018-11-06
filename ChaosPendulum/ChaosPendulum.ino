@@ -1,6 +1,3 @@
-#include <AccelStepper.h>
-#include <MultiStepper.h>
-
 //#define ENCODER_OPTIMIZE_INTERRUPTS
 
 //#include <SavLayFilter.h>
@@ -13,7 +10,7 @@
 #include <TeensyView.h>
 #include <Encoder.h>
 #include <Wire.h>
-//#include <AccelStepper.h>
+#include <AccelStepper.h>
 #include <math.h>
 
 #define PIN_RESET 15
@@ -23,6 +20,7 @@
 #define PIN_MOSI  11
 
 AccelStepper motor(1, 17, 16);
+//Stepper motor(17, 16);
 Encoder buttonEnc(22, 23);
 Encoder flyWheelEnc(7, 6);
 TeensyView oled(PIN_RESET, PIN_DC, PIN_CS, PIN_SCK, PIN_MOSI);
@@ -40,53 +38,48 @@ const int ENCODERBUTTON = 18;
 float fWOutput = 0.0;
 float degPerPulse = 0.0;
 float motorSpeed = 0.0;
+float newPosition = 0.0;
 
 float deltaPhi = 0.0;
 float deltaTime = 0.0;
 
+bool speedChange = false;
+
+unsigned long buttonCounter = 0;
+
 void setup() {
   Serial.begin(19200);
   pinMode(ENCODERBUTTON, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(ENCODERBUTTON), interuptHandler, FALLING);
+  attachInterrupt(digitalPinToInterrupt(ENCODERBUTTON), interruptHandler, FALLING);
 
   oled.begin();
   oled.clear(PAGE);
 
-  motor.setAcceleration(100);
-  //motor.setMaxSpeed(248);
-//  controller.rotateAsync(motor);
+  motor.setAcceleration(20000);
+  motor.setMaxSpeed(10000);
 
   degPerPulse = 360.0 / (float)PPR;
 
-  //  Testing the time the motor takes to complete 8 rotations
-  //  motor.setMaxSpeed(1600);
-  //  motor.setTargetRel(1600);
-  //  timeElapsed = 0;
-  //  controller.move(motor);
-  //  Serial.println(timeElapsed);
-  //  Serial.println(motor.getPosition());
-  //Serial.println("CLEARDATA");
-  //Serial.println("LABEL,count");
-
 }//END SETUP
-
-long countCount = 0;
+float loopLastPosition = 0.0;
 void loop() {
-  //oled.clear(PAGE);
 
   float fWOmega = flyWheelOmega();
-  motorSpeed = buttonEncReading();
-  //screenWriting(motorSpeed);
-
-  motor.setMaxSpeed(motorSpeed);
+  
+  if (speedChange) {
+    buttonEnc.write(loopLastPosition * 24.0);
+    while (speedChange) {
+      motor.setSpeed(0);
+      motor.runSpeed();
+      motorSpeed = buttonEncReading() / 24.0;
+      Serial.println(motorSpeed);
+      Serial.println("");
+      screenWriting(motorSpeed);
+    }
+  }
+  loopLastPosition = motorSpeed;
+  motor.setSpeed(motorSpeed);
   motor.runSpeed();
-
-  //Serial.print("DATA,,");
-  //Serial.print(countCount);
-  //Serial.print("  ,  ");
-  Serial.print(fWOutput);
-  Serial.print(",");
-  Serial.println(fWOmega);
 
 }//END LOOP
 
@@ -117,8 +110,7 @@ float omega = 1.0;
 
 float flyWheelOmega() {
 
-  float newPosition = flyWheelEnc.read();
-  //For printing position of flywheel
+  newPosition = flyWheelEnc.read();
 
   //Should return the current angle of the flywheel
   fWOutput = newPosition * degPerPulse;
@@ -132,12 +124,6 @@ float flyWheelOmega() {
 
     omega = deltaPhi / deltaTime;
 
-    //    Serial.print(deltaTime); Serial.print("    ");
-    //    Serial.print(deltaPhi); Serial.print("    ");
-    //    Serial.println(omega);
-    //phi = degPerPulse * (float)oldPosition + deltaPhi / 2.0; //The current angle of the plate
-    //t = (float)oldTime / 1000000.0 + deltaTime / 2.0; //The time of reading in seconds
-
     //Saves the new data
     oldTime = newTime;
     oldPosition = newPosition;
@@ -150,12 +136,12 @@ float flyWheelOmega() {
    reads the encoder, limits it and maps the new value
    2200 is about the limit before the stepper starts slipping
 */
-int buttonEncReading() {
-  int encPosition = buttonEnc.read();
-
+float buttonEncReading() {
+  float encPosition = buttonEnc.read();
+  //Serial.println(encPosition,8);
   noInterrupts();
-  int maxPosition = 1500;
-  int minPosition = 0;
+  float maxPosition = 50000.0;
+  float minPosition = 0.0;
 
   if (encPosition < minPosition) {
     encPosition = minPosition;
@@ -168,7 +154,7 @@ int buttonEncReading() {
     buttonEnc.write(maxPosition);
   }
 
-  //encPosition = map(encPosition, minPosition, maxPosition, 0, 400);
+  //encPosition = map(encPosition, minPosition, maxPosition, 50, 500);
   interrupts();
   return encPosition;
 
@@ -180,85 +166,54 @@ int buttonEncReading() {
    Writes everything needed to the screen
 */
 float newMotorOmega = 31.48;
-bool speedChange = false;
-bool newOmega = false;
-int lastPosition = -999;
 
-void screenWriting(int motSpeed) {
+bool newOmega = false;
+float lastPosition = -999;
+
+void screenWriting(float motSpeed) {
 
   if (motSpeed == lastPosition) {
-    //Finds the RPM of the motor for display
-    float rpm = (((float)motSpeed * 60.0) / 200.0);
-    //Finds the rotational frequency of the motor
-    float omega = ((((rpm * 360) / 60.0) * M_PI) / 180);
+    float rpm = ((motSpeed * 60.0) / 200.0);
+    float omega = ((((rpm * 360.0) / 60.0) * M_PI) / 180.0);
 
-    //Allows the LCD to only change the omega value on button push
-    if (speedChange) {
-      newMotorOmega = omega;
-      speedChange = false;
-      newOmega = true;
-    } else {
-      omega = newMotorOmega;
-      newOmega = false;
-    }
+    //Serial.println(rpm);
+    //Serial.println("");
+    //Serial.println(omega);
 
     oled.setFontType(1);
     oled.setCursor(0, 0);
     oled.print("RPM:");
     oled.setFontType(0);
     oled.setCursor(40, 4);
-    oled.print(rpm);
+    oled.print(rpm, 3);
     //oled.print(motSpeed);
     oled.setFontType(1);
     oled.setCursor(0, 15);
     oled.print("Omega: ");
     oled.setCursor(59, 20);
     oled.setFontType(0);
-    if (newOmega) {
-      oled.print(newMotorOmega);
-    } else {
-      oled.print(omega);
-    }
+    oled.print(omega,4);
     oled.display();
   }
   lastPosition = motSpeed;
 }//END ScreenWriting
 
-//---------------------------------------------------------------------------
-/**
-   Sets the new speed and starts with immeditate return
-*/
-void motorSpeedChange() {
-  Serial.println("Inside motorReset()");
-  
-}//END MotorSpeedChange
 
 //---------------------------------------------------------------------------
 /**
    Tells the interupt which function to call depending on the the times the button has been pushed
    Inlcudes a debounder to deal with the mechanical button
 */
-bool oneButtonClick = false;
-unsigned long lastInterupt = 0;
 
-void interuptHandler() {
-  unsigned long interupt = millis();
+unsigned long lastInterrupt = 0;
+
+void interruptHandler() {
+  unsigned long interrupt = millis();
 
   //If a interupt happens before 200 milliseconds, ignore it
-  if (interupt - lastInterupt > 200) {
-    Serial.println("Inside interuptHandler");
-    speedChange = true;
-//    controller.stop();
-    motor.setMaxSpeed(motorSpeed);
-    //oneButtonClick = !oneButtonClick;
-
-    if (oneButtonClick == true) {
-      motorReset();
-    } else {
-      motorSpeedChange();
-    }
-    
-    lastInterupt = interupt;
+  if (interrupt - lastInterrupt > 200) {
+    speedChange = !speedChange;
+    lastInterrupt = interrupt;
   }
 }
 
@@ -272,14 +227,14 @@ void motorReset() {
   Serial.println("Inside motorReset()");
 
   int encPosition = buttonEnc.read();
-//  int motorPosition = motor.getPosition();
-//  Serial.print(motorPosition);
+  //  int motorPosition = motor.getPosition();
+  //  Serial.print(motorPosition);
   Serial.print("  ,  ");
   Serial.println(encPosition);
   Serial.println("");
   if (encPosition > lastEncPosition) {
-//    motorPosition += 100;
-   // controller.move(motor);
+    //    motorPosition += 100;
+    // controller.move(motor);
     Serial.println("Return from greater then move");
   } else if (encPosition < lastEncPosition) {
     //motorPosition += -100;

@@ -1,7 +1,10 @@
+#include <AccelStepper.h>
+#include <MultiStepper.h>
+
 //#define ENCODER_OPTIMIZE_INTERRUPTS
 
 //#include <SavLayFilter.h>
-#include <StepControl.h>
+//#include <StepControl.h>
 #include <elapsedMillis.h>
 #include <font5x7.h>
 #include <font8x16.h>
@@ -19,14 +22,14 @@
 #define PIN_SCK   13
 #define PIN_MOSI  11
 
-Stepper motor(17, 16);
+AccelStepper motor(1, 17, 16);
 Encoder buttonEnc(22, 23);
 Encoder flyWheelEnc(7, 6);
 TeensyView oled(PIN_RESET, PIN_DC, PIN_CS, PIN_SCK, PIN_MOSI);
 
 
 //SavLayFilter sgFilter();
-StepControl<> controller;
+//StepControl<> controller;
 
 elapsedMillis timeElapsed;
 elapsedMicros flyWheelTimer;
@@ -36,7 +39,7 @@ const int ENCODERBUTTON = 18;
 
 float fWOutput = 0.0;
 float degPerPulse = 0.0;
-int motorSpeed = 0;
+float motorSpeed = 0.0;
 
 float deltaPhi = 0.0;
 float deltaTime = 0.0;
@@ -49,9 +52,9 @@ void setup() {
   oled.begin();
   oled.clear(PAGE);
 
-  motor.setAcceleration(300000);
-  motor.setMaxSpeed(248);
-  controller.rotateAsync(motor);
+  motor.setAcceleration(100);
+  //motor.setMaxSpeed(248);
+//  controller.rotateAsync(motor);
 
   degPerPulse = 360.0 / (float)PPR;
 
@@ -73,9 +76,10 @@ void loop() {
 
   float fWOmega = flyWheelOmega();
   motorSpeed = buttonEncReading();
-  screenWriting(motorSpeed);
+  //screenWriting(motorSpeed);
 
-  countCount++;
+  motor.setMaxSpeed(motorSpeed);
+  motor.runSpeed();
 
   //Serial.print("DATA,,");
   //Serial.print(countCount);
@@ -150,8 +154,8 @@ int buttonEncReading() {
   int encPosition = buttonEnc.read();
 
   noInterrupts();
-  int maxPosition = 300;
-  int minPosition = -300;
+  int maxPosition = 1500;
+  int minPosition = 0;
 
   if (encPosition < minPosition) {
     encPosition = minPosition;
@@ -164,7 +168,7 @@ int buttonEncReading() {
     buttonEnc.write(maxPosition);
   }
 
-  encPosition = map(encPosition, minPosition, maxPosition, 120, 400);
+  //encPosition = map(encPosition, minPosition, maxPosition, 0, 400);
   interrupts();
   return encPosition;
 
@@ -184,9 +188,9 @@ void screenWriting(int motSpeed) {
 
   if (motSpeed == lastPosition) {
     //Finds the RPM of the motor for display
-    float rpm = (((motSpeed * 60) * 1.8) / 360);
+    float rpm = (((float)motSpeed * 60.0) / 200.0);
     //Finds the rotational frequency of the motor
-    float omega = (((rpm / 60) * 360) * M_PI) / 180;
+    float omega = ((((rpm * 360) / 60.0) * M_PI) / 180);
 
     //Allows the LCD to only change the omega value on button push
     if (speedChange) {
@@ -204,6 +208,7 @@ void screenWriting(int motSpeed) {
     oled.setFontType(0);
     oled.setCursor(40, 4);
     oled.print(rpm);
+    //oled.print(motSpeed);
     oled.setFontType(1);
     oled.setCursor(0, 15);
     oled.print("Omega: ");
@@ -225,7 +230,7 @@ void screenWriting(int motSpeed) {
 */
 void motorSpeedChange() {
   Serial.println("Inside motorReset()");
-  controller.rotateAsync(motor);
+  
 }//END MotorSpeedChange
 
 //---------------------------------------------------------------------------
@@ -243,7 +248,7 @@ void interuptHandler() {
   if (interupt - lastInterupt > 200) {
     Serial.println("Inside interuptHandler");
     speedChange = true;
-    controller.stop();
+//    controller.stop();
     motor.setMaxSpeed(motorSpeed);
     //oneButtonClick = !oneButtonClick;
 
@@ -267,18 +272,18 @@ void motorReset() {
   Serial.println("Inside motorReset()");
 
   int encPosition = buttonEnc.read();
-  int motorPosition = motor.getPosition();
-  Serial.print(motorPosition);
+//  int motorPosition = motor.getPosition();
+//  Serial.print(motorPosition);
   Serial.print("  ,  ");
   Serial.println(encPosition);
   Serial.println("");
   if (encPosition > lastEncPosition) {
-    motorPosition += 100;
-    controller.move(motor);
+//    motorPosition += 100;
+   // controller.move(motor);
     Serial.println("Return from greater then move");
   } else if (encPosition < lastEncPosition) {
-    motorPosition += -100;
-    controller.move(motor);
+    //motorPosition += -100;
+    //controller.move(motor);
     Serial.println("Return from less then move");
   }
   lastEncPosition = encPosition;

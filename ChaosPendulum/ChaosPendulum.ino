@@ -30,7 +30,7 @@ TeensyView oled(PIN_RESET, PIN_DC, PIN_CS, PIN_SCK, PIN_MOSI);
 //StepControl<> controller;
 
 elapsedMillis timeElapsed;
-elapsedMicros flyWheelTimer;
+elapsedMillis flyWheelTimer;
 
 const int PPR = 4096;
 const int ENCODERBUTTON = 18;
@@ -55,13 +55,17 @@ void setup() {
   oled.begin();
   oled.clear(PAGE);
 
-  motor.setAcceleration(20000);
+  motor.setAcceleration(10000);
   motor.setMaxSpeed(10000);
 
   degPerPulse = 360.0 / (float)PPR;
 
 }//END SETUP
+//---------------------------------------------------------------------
+
 float loopLastPosition = 0.0;
+
+
 void loop() {
 
   float fWOmega = flyWheelOmega();
@@ -80,7 +84,13 @@ void loop() {
   loopLastPosition = motorSpeed;
   motor.setSpeed(motorSpeed);
   motor.runSpeed();
-
+  unsigned long theTime = millis();
+  Serial.print(fWOmega, 8);
+  Serial.print(" , ");
+  Serial.print(fWOutput, 8);
+  Serial.print(" , ");
+  Serial.println(theTime);
+  
 }//END LOOP
 
 //---------------------------------------------------------------------------
@@ -111,6 +121,7 @@ float omega = 1.0;
 float flyWheelOmega() {
 
   newPosition = flyWheelEnc.read();
+  //Serial.println(newPosition);
 
   //Should return the current angle of the flywheel
   fWOutput = newPosition * degPerPulse;

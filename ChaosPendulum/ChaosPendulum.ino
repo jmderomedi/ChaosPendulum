@@ -30,14 +30,14 @@ TeensyView oled(PIN_RESET, PIN_DC, PIN_CS, PIN_SCK, PIN_MOSI);
 //StepControl<> controller;
 
 elapsedMillis timeElapsed;
-elapsedMillis flyWheelTimer;
+elapsedMicros flyWheelTimer;
 
 const int PPR = 4096;
 const int ENCODERBUTTON = 18;
 
 float fWOutput = 0.0;
 float degPerPulse = 0.0;
-float motorSpeed = 0.0;
+float motorSpeed = 150.0;
 float newPosition = 0.0;
 
 float deltaPhi = 0.0;
@@ -48,7 +48,7 @@ bool speedChange = false;
 unsigned long buttonCounter = 0;
 
 void setup() {
-  Serial.begin(19200);
+  Serial.begin(115200);
   pinMode(ENCODERBUTTON, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(ENCODERBUTTON), interruptHandler, FALLING);
 
@@ -57,56 +57,51 @@ void setup() {
 
   motor.setAcceleration(10000);
   motor.setMaxSpeed(10000);
-
   degPerPulse = 360.0 / (float)PPR;
 
 }//END SETUP
 //---------------------------------------------------------------------
 
-float loopLastPosition = 0.0;
-
-
+float loopLastPosition = 150;
+float oldPosition = -9999;
+float fWOmega = -9999;
+unsigned long newTime;
 void loop() {
 
-  float fWOmega = flyWheelOmega();
+  newPosition = flyWheelEnc.read();
   
+  if (newPosition != oldPosition) {
+    newTime = flyWheelTimer;
+    fWOmega = flyWheelOmega();
+    oldPosition = newPosition;
+    
+    Serial.print(fWOmega, 8);
+    Serial.print(",");
+    Serial.println(fWOutput, 8);
+    //Serial.print(" , ");
+    // Serial.println(theTime);
+  }
   if (speedChange) {
-    buttonEnc.write(loopLastPosition * 24.0);
+    buttonEnc.write(loopLastPosition * 384.0);
     while (speedChange) {
       motor.setSpeed(0);
       motor.runSpeed();
-      motorSpeed = buttonEncReading() / 24.0;
-      Serial.println(motorSpeed);
-      Serial.println("");
+      motorSpeed = buttonEncReading() / 384.0;
+      //Serial.println(motorSpeed);
+      //Serial.println("");
       screenWriting(motorSpeed);
     }
+    loopLastPosition = motorSpeed;
   }
-  loopLastPosition = motorSpeed;
+
+
+
   motor.setSpeed(motorSpeed);
   motor.runSpeed();
-  unsigned long theTime = millis();
-  Serial.print(fWOmega, 8);
-  Serial.print(" , ");
-  Serial.print(fWOutput, 8);
-  Serial.print(" , ");
-  Serial.println(theTime);
-  
+
+
+
 }//END LOOP
-
-//---------------------------------------------------------------------------
-/**
-   Counts if the flywheel moved clockwise or counterclockwise
-*/
-long movementCounter = 0;
-
-int countMovement(float omegaValue) {
-  if (omegaValue > 0) {
-    movementCounter++;
-  } else if (omegaValue < 0) {
-    movementCounter--;
-  }
-  return movementCounter;
-}//END CountMovement
 
 //---------------------------------------------------------------------------
 /**
@@ -114,31 +109,27 @@ int countMovement(float omegaValue) {
    Returns the omega value of the flywheel
 */
 
-long oldPosition = 999;
-long oldTime = 0;
+
+unsigned long oldTime = 0;
 float omega = 1.0;
 
 float flyWheelOmega() {
 
-  newPosition = flyWheelEnc.read();
-  //Serial.println(newPosition);
+  //newPosition = flyWheelEnc.read();
 
-  //Should return the current angle of the flywheel
-  fWOutput = newPosition * degPerPulse;
 
-  if (newPosition != oldPosition) {
-    //Finding the omega of the flywheel
-    deltaPhi = degPerPulse * (newPosition - oldPosition);
+  fWOutput = (newPosition * degPerPulse); //Should return the current angle of the flywheel
+  //if (newPosition != oldPosition) {
 
-    long newTime = flyWheelTimer;
-    deltaTime = float(newTime - oldTime) / float(1000000.0);
+  deltaPhi = degPerPulse * (newPosition - oldPosition);  //Finding the omega of the flywheel
 
-    omega = deltaPhi / deltaTime;
+  //unsigned long newTime = flyWheelTimer;
+  deltaTime = float(newTime - oldTime) / float(1000000.0);
+  omega = deltaPhi / deltaTime;
 
-    //Saves the new data
-    oldTime = newTime;
-    oldPosition = newPosition;
-  }
+  oldTime = newTime; //Saves the new data
+  oldPosition = newPosition;
+  // }
   return omega;
 }//END FlyWheelRead
 
@@ -151,7 +142,7 @@ float buttonEncReading() {
   float encPosition = buttonEnc.read();
   //Serial.println(encPosition,8);
   noInterrupts();
-  float maxPosition = 50000.0;
+  float maxPosition = 100000.0;
   float minPosition = 0.0;
 
   if (encPosition < minPosition) {
@@ -203,7 +194,7 @@ void screenWriting(float motSpeed) {
     oled.print("Omega: ");
     oled.setCursor(59, 20);
     oled.setFontType(0);
-    oled.print(omega,4);
+    oled.print(omega, 4);
     oled.display();
   }
   lastPosition = motSpeed;
@@ -254,4 +245,20 @@ void motorReset() {
   }
   lastEncPosition = encPosition;
 }
+
+
+//---------------------------------------------------------------------------
+/**
+   Counts if the flywheel moved clockwise or counterclockwise
+*/
+long movementCounter = 0;
+
+int countMovement(float omegaValue) {
+  if (omegaValue > 0) {
+    movementCounter++;
+  } else if (omegaValue < 0) {
+    movementCounter--;
+  }
+  return movementCounter;
+}//END CountMovement
 

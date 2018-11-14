@@ -1,7 +1,6 @@
 //#define ENCODER_OPTIMIZE_INTERRUPTS
 
 //#include <SavLayFilter.h>
-//#include <StepControl.h>
 #include <elapsedMillis.h>
 #include <font5x7.h>
 #include <font8x16.h>
@@ -20,7 +19,6 @@
 #define PIN_MOSI  11
 
 AccelStepper motor(1, 17, 16);
-//Stepper motor(17, 16);
 Encoder buttonEnc(22, 23);
 Encoder flyWheelEnc(7, 6);
 TeensyView oled(PIN_RESET, PIN_DC, PIN_CS, PIN_SCK, PIN_MOSI);
@@ -31,14 +29,26 @@ TeensyView oled(PIN_RESET, PIN_DC, PIN_CS, PIN_SCK, PIN_MOSI);
 
 elapsedMillis timeElapsed;
 elapsedMicros flyWheelTimer;
+long poinCareCount = 0;
 
 const int PPR = 4096;
 const int ENCODERBUTTON = 18;
-
+unsigned long oldTime = 0;
+float omega = 1.0;
 float fWOutput = 0.0;
 float degPerPulse = 0.0;
 float motorSpeed = 150.0;
 float newPosition = 0.0;
+float loopLastPosition = 150;
+float oldPosition = -9999;
+float fWOmega = -9999;
+unsigned long newTime;
+float newMotorOmega = 31.48;
+unsigned long lastInterrupt = 0;
+long movementCounter = 0;
+int lastEncPosition = 0;
+bool newOmega = false;
+float lastPosition = -999;
 
 float deltaPhi = 0.0;
 float deltaTime = 0.0;
@@ -60,42 +70,40 @@ void setup() {
   degPerPulse = 360.0 / (float)PPR;
 
 }//END SETUP
+
 //---------------------------------------------------------------------
-
-float loopLastPosition = 150;
-float oldPosition = -9999;
-float fWOmega = -9999;
-unsigned long newTime;
+long dataCount = 0;
+long countcount = 0;
 void loop() {
-
   newPosition = flyWheelEnc.read();
-  
   if (newPosition != oldPosition) {
-    newTime = flyWheelTimer;
-    fWOmega = flyWheelOmega();
-    oldPosition = newPosition;
-    
-    Serial.print(fWOmega, 8);
-    Serial.print(",");
-    Serial.println(fWOutput, 8);
-    //Serial.print(" , ");
-    // Serial.println(theTime);
+    if (motor.currentPosition() % 200 == 0) {
+      newTime = flyWheelTimer;
+      fWOmega = flyWheelOmega();
+      oldPosition = newPosition;
+
+
+      Serial.print(fWOmega, 8);
+      Serial.print(",");
+      Serial.println(fWOutput, 8);
+    }
+    //        Serial.print(fWOmega, 8);
+    //        Serial.print(",");
+    //        Serial.println(fWOutput, 8);
+
   }
   if (speedChange) {
-    buttonEnc.write(loopLastPosition * 384.0);
+    buttonEnc.write(loopLastPosition); //Times by 384
     while (speedChange) {
       motor.setSpeed(0);
       motor.runSpeed();
-      motorSpeed = buttonEncReading() / 384.0;
+      motorSpeed = buttonEncReading(); //Divide by 384
       //Serial.println(motorSpeed);
       //Serial.println("");
       screenWriting(motorSpeed);
     }
     loopLastPosition = motorSpeed;
   }
-
-
-
   motor.setSpeed(motorSpeed);
   motor.runSpeed();
 
@@ -108,16 +116,8 @@ void loop() {
    Reads the encoder in the fly wheel and calculates the omega of the flywheel
    Returns the omega value of the flywheel
 */
-
-
-unsigned long oldTime = 0;
-float omega = 1.0;
-
 float flyWheelOmega() {
-
   //newPosition = flyWheelEnc.read();
-
-
   fWOutput = (newPosition * degPerPulse); //Should return the current angle of the flywheel
   //if (newPosition != oldPosition) {
 
@@ -167,13 +167,7 @@ float buttonEncReading() {
    Finds the RPM and Omega values
    Writes everything needed to the screen
 */
-float newMotorOmega = 31.48;
-
-bool newOmega = false;
-float lastPosition = -999;
-
 void screenWriting(float motSpeed) {
-
   if (motSpeed == lastPosition) {
     float rpm = ((motSpeed * 60.0) / 200.0);
     float omega = ((((rpm * 360.0) / 60.0) * M_PI) / 180.0);
@@ -206,9 +200,6 @@ void screenWriting(float motSpeed) {
    Tells the interupt which function to call depending on the the times the button has been pushed
    Inlcudes a debounder to deal with the mechanical button
 */
-
-unsigned long lastInterrupt = 0;
-
 void interruptHandler() {
   unsigned long interrupt = millis();
 
@@ -223,8 +214,6 @@ void interruptHandler() {
 /**
    Moves the motor with the encoder to be able to set the motor to reset point
 */
-int lastEncPosition = 0;
-
 void motorReset() {
   Serial.println("Inside motorReset()");
 
@@ -251,8 +240,6 @@ void motorReset() {
 /**
    Counts if the flywheel moved clockwise or counterclockwise
 */
-long movementCounter = 0;
-
 int countMovement(float omegaValue) {
   if (omegaValue > 0) {
     movementCounter++;

@@ -1,6 +1,6 @@
 //#define ENCODER_OPTIMIZE_INTERRUPTS
 
-//#include <SavLayFilter.h>
+#include <SavLayFilter.h>
 #include <elapsedMillis.h>
 #include <font5x7.h>
 #include <font8x16.h>
@@ -11,6 +11,7 @@
 #include <Wire.h>
 #include <AccelStepper.h>
 #include <math.h>
+
 
 #define PIN_RESET 15
 #define PIN_DC    5
@@ -24,7 +25,8 @@ Encoder flyWheelEnc(7, 6);
 TeensyView oled(PIN_RESET, PIN_DC, PIN_CS, PIN_SCK, PIN_MOSI);
 
 
-//SavLayFilter sgFilter();
+SavLayFilter sgFilterOmega = SavLayFilter();
+SavLayFilter sgFilterAngle = SavLayFilter();
 //StepControl<> controller;
 
 elapsedMicros flyWheelTimer;
@@ -88,11 +90,14 @@ void loop() {
     dataCount++;    //Keeps track of each new data point for PoinCare Sections
     newPosition = flyWheelEnc.read();
 
-    if (motorPosition % 201 == 0) { // The motor has made a full rotation
-      //countArray[arrayCount] = dataCount;
-      omegaArray[arrayCount] = fWOmega;
-      angleArray[arrayCount] = fWOutput;
-      arrayCount++;
+    if (motorPosition % 200 == 0) { // The motor has made a full rotation
+      Serial.print(dataCount);      //Prints out the count for post processing in MatLab
+      Serial.print(",");
+      Serial.print(sgFilterOmega.quadCubicSmooth(5, fWOmega), 8);     //Prints out the angluar frequency of the flywheel
+      Serial.print(",");
+      Serial.println(sgFilterAngle.quadCubicSmooth(5, fWOutput), 8);    //Prints out the angle of the flywheel
+      //Serial.print(",");
+      //Serial.println(motorPosition);    //Prints out the step of the motor in degrees
       dataCount = 0;   //reset the count for next rotation
     }
 
@@ -102,26 +107,11 @@ void loop() {
     oldPosition = newPosition;
 
 
-    //    Serial.print(dataCount);      //Prints out the count for post processing in MatLab
-    //    Serial.print(",");
-    //    Serial.print(fWOmega, 8);     //Prints out the angluar frequency of the flywheel
-    //    Serial.print(",");
-    //    Serial.print(fWOutput, 8);    //Prints out the angle of the flywheel
-    //    Serial.print(",");
-    //    Serial.println(motorPosition);    //Prints out the step of the motor in degrees
+
   }
 
   if (speedChange) {
     buttonEnc.write(loopLastPosition); //Times by 384 for more accurate dialing
-
-    for (int i = 0; i < arrayCount; i++) {
-      //Serial.print(countArray[i]);      //Prints out the count for post processing in MatLab
-      //Serial.print(",");
-      Serial.print(omegaArray[i]);     //Prints out the angluar frequency of the flywheel
-      Serial.print(",");
-      Serial.println(angleArray[i]);    //Prints out the angle of the flywheel
-    }
-    arrayCount = 0;
 
     while (speedChange) {
       motor.setSpeed(0);

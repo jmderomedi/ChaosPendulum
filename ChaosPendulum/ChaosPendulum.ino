@@ -27,37 +27,36 @@ TeensyView oled(PIN_RESET, PIN_DC, PIN_CS, PIN_SCK, PIN_MOSI);
 //SavLayFilter sgFilter();
 //StepControl<> controller;
 
-elapsedMillis timeElapsed;
 elapsedMicros flyWheelTimer;
-long poinCareCount = 0;
 
 const int PPR = 4096;
 const int ENCODERBUTTON = 18;
-unsigned long oldTime = 0;
-float omega = 1.0;
-float fWOutput = 0.0;
-float degPerPulse = 0.0;
-float motorSpeed = 200.0;
-float newPosition = 0.0;
-float loopLastPosition = 150;
-float oldPosition = -9999;
-float fWOmega = -9999;
-unsigned long newTime;
-//float newMotorOmega = 31.48;
+
+unsigned long oldTime = 0;    //flyWheelOmega()
+unsigned long newTime;        //flyWheelOmega()
 unsigned long lastInterrupt = 0;
-long movementCounter = 0;
-int lastEncPosition = 0;
-bool newOmega = false;
-float lastPosition = -999;
-int dataCount = 0;
-int motorPosition = 0;
-float motorOldPosition = 0.0;
-float deltaPhi = 0.0;
-float deltaTime = 0.0;
 
-bool speedChange = false;
+float omega = 1.0;            //flyWheelOmega()
+float fWOutput = 0.0;         //flyWheelOmega()
+float degPerPulse = 0.0;      //flyWheelOmega()
+float motorSpeed = 150.0;     //loop()
+float newPosition = 0.0;      //loop()/flyWheelOmega()
+float loopLastPosition = 300; //loop()
+float oldPosition = -9999;    //loop()/flyWheelOmega()
+float fWOmega = -9999;        //loop()/flyWheelOmega()
+float lastPosition = -999;    //loop()/screenWriting()
+float motorOldPosition = 0.0; //loop()
+float deltaPhi = 0.0;         //flyWheelOmega()
+float deltaTime = 0.0;        //flyWheelOmega()
 
-unsigned long buttonCounter = 0;
+int dataCount = 0;            //loop()
+int motorPosition = 0;        //loop()
+
+bool speedChange = false;     //loop()/interruptHandler
+
+float countArray [4000];
+float omegaArray [4000];
+float angleArray [4000];
 
 void setup() {
   Serial.begin(115200);
@@ -74,8 +73,13 @@ void setup() {
 }//END SETUP
 
 //---------------------------------------------------------------------
+int arrayCount = 0;
 
 void loop() {
+
+  if (arrayCount >= 3999) {
+    speedChange = true;
+  }
 
   motorPosition = motor.currentPosition();
 
@@ -85,6 +89,10 @@ void loop() {
     newPosition = flyWheelEnc.read();
 
     if (motorPosition % 201 == 0) { // The motor has made a full rotation
+      //countArray[arrayCount] = dataCount;
+      omegaArray[arrayCount] = fWOmega;
+      angleArray[arrayCount] = fWOutput;
+      arrayCount++;
       dataCount = 0;   //reset the count for next rotation
     }
 
@@ -93,17 +101,28 @@ void loop() {
     motorOldPosition = motorPosition;
     oldPosition = newPosition;
 
-    Serial.print(dataCount);      //Prints out the count for post processing in MatLab
-    Serial.print(",");
-    Serial.print(fWOmega, 8);     //Prints out the angluar frequency of the flywheel
-    Serial.print(",");
-    Serial.print(fWOutput, 8);    //Prints out the angle of the flywheel
-    Serial.print(",");
-    Serial.println(motorPosition);    //Prints out the step of the motor in degrees
+
+    //    Serial.print(dataCount);      //Prints out the count for post processing in MatLab
+    //    Serial.print(",");
+    //    Serial.print(fWOmega, 8);     //Prints out the angluar frequency of the flywheel
+    //    Serial.print(",");
+    //    Serial.print(fWOutput, 8);    //Prints out the angle of the flywheel
+    //    Serial.print(",");
+    //    Serial.println(motorPosition);    //Prints out the step of the motor in degrees
   }
-  
+
   if (speedChange) {
     buttonEnc.write(loopLastPosition); //Times by 384 for more accurate dialing
+
+    for (int i = 0; i < arrayCount; i++) {
+      //Serial.print(countArray[i]);      //Prints out the count for post processing in MatLab
+      //Serial.print(",");
+      Serial.print(omegaArray[i]);     //Prints out the angluar frequency of the flywheel
+      Serial.print(",");
+      Serial.println(angleArray[i]);    //Prints out the angle of the flywheel
+    }
+    arrayCount = 0;
+
     while (speedChange) {
       motor.setSpeed(0);
       motorSpeed = buttonEncReading(); //Divide by 384 for more accurate dialing

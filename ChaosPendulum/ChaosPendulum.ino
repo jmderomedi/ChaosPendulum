@@ -37,19 +37,21 @@ unsigned long oldTime = 0;
 float omega = 1.0;
 float fWOutput = 0.0;
 float degPerPulse = 0.0;
-float motorSpeed = 150.0;
+float motorSpeed = 200.0;
 float newPosition = 0.0;
 float loopLastPosition = 150;
 float oldPosition = -9999;
 float fWOmega = -9999;
 unsigned long newTime;
-float newMotorOmega = 31.48;
+//float newMotorOmega = 31.48;
 unsigned long lastInterrupt = 0;
 long movementCounter = 0;
 int lastEncPosition = 0;
 bool newOmega = false;
 float lastPosition = -999;
-
+int dataCount = 0;
+int motorPosition = 0;
+float motorOldPosition = 0.0;
 float deltaPhi = 0.0;
 float deltaTime = 0.0;
 
@@ -64,63 +66,56 @@ void setup() {
 
   oled.begin();
   oled.clear(PAGE);
-//Bounce p1IncreaseButton = Bounce();
-//Bounce p2IncreaseButton = Bounce();
-//Bounce p1DecreaseButton = Bounce();
-//Bounce p2DecreaseButton = Bounce();
-//Bounce p1ResetButton = Bounce();
-//Bounce p2ResetButton = Bounce();
 
   motor.setAcceleration(10000);
-  motor.setMaxSpeed(10000);
+  motor.setMaxSpeed(11000);
   degPerPulse = 360.0 / (float)PPR;
 
 }//END SETUP
 
 //---------------------------------------------------------------------
-int dataCount = 0;
-int motorPosition = 0;
+
 void loop() {
 
-  //SWITCH TO CHECK IF MOTOR IS IN NEW POSITION THEN TAKE DATA
-  //NOT THE FLYWHEEL, SINCE THE DATA READINGS ARE DEPENDENT ON THE MOTOR POSITION
-  
-  newPosition = flyWheelEnc.read();
-  //Check if the flywheel is in a new position
-  if (newPosition != oldPosition) {
-    dataCount++;    //Keeps track of each new data point for PoinCare Sections
-    motorPosition = motor.currentPosition();
+  motorPosition = motor.currentPosition();
 
-    // The motor has made a full rotation
-    if (motorPosition % 200 == 0) {
+  //Check if the flywheel is in a new position
+  if (motorPosition != motorOldPosition) {
+    dataCount++;    //Keeps track of each new data point for PoinCare Sections
+    newPosition = flyWheelEnc.read();
+
+    if (motorPosition % 201 == 0) { // The motor has made a full rotation
       dataCount = 0;   //reset the count for next rotation
-      motorPosition = 0; 
     }
-    
-    newTime = flyWheelTimer;    
-    fWOmega = flyWheelOmega(); 
+
+    newTime = flyWheelTimer;
+    fWOmega = flyWheelOmega();
+    motorOldPosition = motorPosition;
     oldPosition = newPosition;
+
     Serial.print(dataCount);      //Prints out the count for post processing in MatLab
     Serial.print(",");
     Serial.print(fWOmega, 8);     //Prints out the angluar frequency of the flywheel
     Serial.print(",");
     Serial.print(fWOutput, 8);    //Prints out the angle of the flywheel
     Serial.print(",");
-    Serial.println((((motorPosition * 360.0) / 200.0) * M_PI) / 180.0);    //Prints out the step of the motor in degrees
+    Serial.println(motorPosition);    //Prints out the step of the motor in degrees
   }
+  
   if (speedChange) {
-    buttonEnc.write(loopLastPosition); //Times by 384
+    buttonEnc.write(loopLastPosition); //Times by 384 for more accurate dialing
     while (speedChange) {
       motor.setSpeed(0);
-      motor.runSpeed();
-      motorSpeed = buttonEncReading(); //Divide by 384
+      motorSpeed = buttonEncReading(); //Divide by 384 for more accurate dialing
       screenWriting(motorSpeed);
     }
-    loopLastPosition = motorSpeed;
+    loopLastPosition = motorSpeed;  //Saves the new speed so the screen always shows the right number
+    dataCount = 0;          //reseting datacount since it is a new speed
   }
+
   motor.setSpeed(motorSpeed);
   motor.runSpeed();
-  
+
 }//END LOOP
 
 //---------------------------------------------------------------------------
@@ -136,7 +131,7 @@ float flyWheelOmega() {
   oldTime = newTime; //Saves the new data
   oldPosition = newPosition;
   return omega;
-  
+
 }//END FlyWheelRead
 
 //---------------------------------------------------------------------------
@@ -190,7 +185,7 @@ void screenWriting(float motSpeed) {
     oled.display();
   }
   lastPosition = motSpeed;
-  
+
 }//END ScreenWriting
 
 

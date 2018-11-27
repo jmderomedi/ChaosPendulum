@@ -64,6 +64,12 @@ void setup() {
 
   oled.begin();
   oled.clear(PAGE);
+//Bounce p1IncreaseButton = Bounce();
+//Bounce p2IncreaseButton = Bounce();
+//Bounce p1DecreaseButton = Bounce();
+//Bounce p2DecreaseButton = Bounce();
+//Bounce p1ResetButton = Bounce();
+//Bounce p2ResetButton = Bounce();
 
   motor.setAcceleration(10000);
   motor.setMaxSpeed(10000);
@@ -73,24 +79,34 @@ void setup() {
 
 //---------------------------------------------------------------------
 int dataCount = 0;
+int motorPosition = 0;
 void loop() {
+
+  //SWITCH TO CHECK IF MOTOR IS IN NEW POSITION THEN TAKE DATA
+  //NOT THE FLYWHEEL, SINCE THE DATA READINGS ARE DEPENDENT ON THE MOTOR POSITION
+  
   newPosition = flyWheelEnc.read();
+  //Check if the flywheel is in a new position
   if (newPosition != oldPosition) {
     dataCount++;    //Keeps track of each new data point for PoinCare Sections
-    if (motor.currentPosition() % 200 == 0) {
+    motorPosition = motor.currentPosition();
+
+    // The motor has made a full rotation
+    if (motorPosition % 200 == 0) {
       dataCount = 0;   //reset the count for next rotation
+      motorPosition = 0; 
     }
     
-    newTime = flyWheelTimer;
-    fWOmega = flyWheelOmega();
+    newTime = flyWheelTimer;    
+    fWOmega = flyWheelOmega(); 
     oldPosition = newPosition;
-
     Serial.print(dataCount);      //Prints out the count for post processing in MatLab
     Serial.print(",");
-    Serial.print(fWOmega, 8);
+    Serial.print(fWOmega, 8);     //Prints out the angluar frequency of the flywheel
     Serial.print(",");
-    Serial.println(fWOutput, 8);
-
+    Serial.print(fWOutput, 8);    //Prints out the angle of the flywheel
+    Serial.print(",");
+    Serial.println((((motorPosition * 360.0) / 200.0) * M_PI) / 180.0);    //Prints out the step of the motor in degrees
   }
   if (speedChange) {
     buttonEnc.write(loopLastPosition); //Times by 384
@@ -157,7 +173,7 @@ float buttonEncReading() {
 void screenWriting(float motSpeed) {
   if (motSpeed == lastPosition) {
     float rpm = ((motSpeed * 60.0) / 200.0);
-    float omega = ((((rpm * 360.0) / 60.0) * M_PI) / 180.0);
+    float omega = (((float(rpm * 360.0) / 60.0) * M_PI) / 180.0);  //Omega in radians
 
     oled.setFontType(1);
     oled.setCursor(0, 0);

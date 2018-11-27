@@ -105,9 +105,6 @@ void loop() {
     fWOmega = flyWheelOmega();
     motorOldPosition = motorPosition;
     oldPosition = newPosition;
-
-
-
   }
 
   if (speedChange) {

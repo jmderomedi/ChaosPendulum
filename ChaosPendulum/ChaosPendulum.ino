@@ -79,9 +79,19 @@ void setup() {
 int arrayCount = 0;
 
 void loop() {
+  if (speedChange) {
+    buttonEnc.write(loopLastPosition); //Times by 384 for more accurate dialing
 
-  if (arrayCount >= 3999) {
-    speedChange = true;
+    while (speedChange) {
+      motor.setSpeed(0);
+      motorSpeed = buttonEncReading(); //Divide by 384 for more accurate dialing
+      screenWriting(motorSpeed);
+    }
+    loopLastPosition = motorSpeed;  //Saves the new speed so the screen always shows the right number
+    dataCount = 0;          //reseting datacount since it is a new speed
+    driveTimer = 0;         //Resets the driveTimer to zero
+    sgFilterOmega.resetValues();  //Resets the smoothing array
+    sgFilterAngle.resetValues();  //Resets the smoothing array
   }
 
   motorPosition = motor.currentPosition();
@@ -105,18 +115,7 @@ void loop() {
     oldPosition = newPosition;
   }
 
-  if (speedChange) {
-    buttonEnc.write(loopLastPosition); //Times by 384 for more accurate dialing
 
-    while (speedChange) {
-      motor.setSpeed(0);
-      motorSpeed = buttonEncReading(); //Divide by 384 for more accurate dialing
-      screenWriting(motorSpeed);
-    }
-    loopLastPosition = motorSpeed;  //Saves the new speed so the screen always shows the right number
-    dataCount = 0;          //reseting datacount since it is a new speed
-    driveTimer = 0;
-  }
 
   motor.setSpeed(motorSpeed);
   motor.runSpeed();

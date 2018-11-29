@@ -30,6 +30,7 @@ SavLayFilter sgFilterAngle = SavLayFilter();
 //StepControl<> controller;
 
 elapsedMicros flyWheelTimer;
+elapsedMicros driveTimer;
 
 const int PPR = 4096;
 const int ENCODERBUTTON = 18;
@@ -41,9 +42,9 @@ unsigned long lastInterrupt = 0;
 float omega = 1.0;            //flyWheelOmega()
 float fWOutput = 0.0;         //flyWheelOmega()
 float degPerPulse = 0.0;      //flyWheelOmega()
-float motorSpeed = 150.0;     //loop()
+float motorSpeed = 100.0;     //loop()
 float newPosition = 0.0;      //loop()/flyWheelOmega()
-float loopLastPosition = 300; //loop()
+float loopLastPosition = 150; //loop()
 float oldPosition = -9999;    //loop()/flyWheelOmega()
 float fWOmega = -9999;        //loop()/flyWheelOmega()
 float lastPosition = -999;    //loop()/screenWriting()
@@ -88,19 +89,23 @@ void loop() {
   //Check if the flywheel is in a new position
   if (motorPosition != motorOldPosition) {
     dataCount++;    //Keeps track of each new data point for PoinCare Sections
+    //Serial.println(dataCount);
     newPosition = flyWheelEnc.read();
 
     if (motorPosition % 200 == 0) { // The motor has made a full rotation
-      Serial.print(dataCount);      //Prints out the count for post processing in MatLab
-      Serial.print(",");
-      Serial.print(sgFilterOmega.quadCubicSmooth(5, fWOmega), 8);     //Prints out the angluar frequency of the flywheel
-      Serial.print(",");
-      Serial.println(sgFilterAngle.quadCubicSmooth(5, fWOutput), 8);    //Prints out the angle of the flywheel
-      //Serial.print(",");
-      //Serial.println(motorPosition);    //Prints out the step of the motor in degrees
-      dataCount = 0;   //reset the count for next rotation
+      dataCount = 0;
     }
-
+    if(dataCount == 50){
+      Serial.print(driveTimer);      //Prints out the count for post processing in MatLab
+      Serial.print(",");
+      Serial.print(fWOmega, 8);
+      Serial.print(",");
+      Serial.println(fWOutput, 8);
+//      Serial.print(sgFilterOmega.quadCubicSmooth(5, fWOmega), 8);     //Prints out the angluar frequency of the flywheel
+//      Serial.print(",");
+//      Serial.println(sgFilterAngle.quadCubicSmooth(5, fWOutput), 8);    //Prints out the angle of the flywheel
+    }
+    
     newTime = flyWheelTimer;
     fWOmega = flyWheelOmega();
     motorOldPosition = motorPosition;
@@ -117,6 +122,7 @@ void loop() {
     }
     loopLastPosition = motorSpeed;  //Saves the new speed so the screen always shows the right number
     dataCount = 0;          //reseting datacount since it is a new speed
+    driveTimer = 0;
   }
 
   motor.setSpeed(motorSpeed);

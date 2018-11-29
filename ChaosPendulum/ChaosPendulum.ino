@@ -95,17 +95,10 @@ void loop() {
     if (motorPosition % 200 == 0) { // The motor has made a full rotation
       dataCount = 0;
     }
-    if(dataCount == 50){
-      Serial.print(driveTimer);      //Prints out the count for post processing in MatLab
-      Serial.print(",");
-      Serial.print(fWOmega, 8);
-      Serial.print(",");
-      Serial.println(fWOutput, 8);
-//      Serial.print(sgFilterOmega.quadCubicSmooth(5, fWOmega), 8);     //Prints out the angluar frequency of the flywheel
-//      Serial.print(",");
-//      Serial.println(sgFilterAngle.quadCubicSmooth(5, fWOutput), 8);    //Prints out the angle of the flywheel
+    if (dataCount == 50) {
+      testing();
     }
-    
+
     newTime = flyWheelTimer;
     fWOmega = flyWheelOmega();
     motorOldPosition = motorPosition;
@@ -216,6 +209,17 @@ void interruptHandler() {
   }
 }//END interruptHandler()
 
+void testing() {
+  Serial.print(driveTimer);      //Prints out the count for post processing in MatLab
+  Serial.print(",");
+  Serial.print(fWOmega, 8);
+  Serial.print(",");
+  Serial.print(fWOutput, 8);
+  Serial.print(",");
+  Serial.print(sgFilterOmega.quadCubicSmooth(5, fWOmega), 8);     //Prints out the angluar frequency of the flywheel
+  Serial.print(",");
+  Serial.println(sgFilterAngle.quadCubicSmooth(5, fWOutput), 8);    //Prints out the angle of the flywheel
+}
 ////---------------------------------------------------------------------------
 ///**
 //   Moves the motor with the encoder to be able to set the motor to reset point

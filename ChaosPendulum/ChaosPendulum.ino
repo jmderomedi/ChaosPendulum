@@ -1,5 +1,10 @@
+/*
+   Physics Capstone Project
+   Author: James Deromedi
+   Mentor: Jonathon Newport
+*/
+//---------------------------------------------------------------------
 //#define ENCODER_OPTIMIZE_INTERRUPTS
-
 #include <SavLayFilter.h>
 #include <elapsedMillis.h>
 #include <font5x7.h>
@@ -11,34 +16,30 @@
 #include <Wire.h>
 #include <AccelStepper.h>
 #include <math.h>
-
-
+//---------------------------------------------------------------------
 #define PIN_RESET 15
 #define PIN_DC    5
 #define PIN_CS    10
 #define PIN_SCK   13
 #define PIN_MOSI  11
-
+//---------------------------------------------------------------------
 AccelStepper motor(1, 17, 16);
 Encoder buttonEnc(22, 23);
 Encoder flyWheelEnc(7, 6);
 TeensyView oled(PIN_RESET, PIN_DC, PIN_CS, PIN_SCK, PIN_MOSI);
-
-
 SavLayFilter sgFilterOmega = SavLayFilter();
 SavLayFilter sgFilterAngle = SavLayFilter();
-//StepControl<> controller;
-
+//---------------------------------------------------------------------
 elapsedMicros flyWheelTimer;
 elapsedMicros driveTimer;
-
+//---------------------------------------------------------------------
 const int PPR = 4096;
 const int ENCODERBUTTON = 18;
-
+//---------------------------------------------------------------------
 unsigned long oldTime = 0;    //flyWheelOmega()
 unsigned long newTime;        //flyWheelOmega()
 unsigned long lastInterrupt = 0;
-
+//---------------------------------------------------------------------
 float omega = 1.0;            //flyWheelOmega()
 float fWOutput = 0.0;         //flyWheelOmega()
 float degPerPulse = 0.0;      //flyWheelOmega()
@@ -51,16 +52,12 @@ float lastPosition = -999;    //loop()/screenWriting()
 float motorOldPosition = 0.0; //loop()
 float deltaPhi = 0.0;         //flyWheelOmega()
 float deltaTime = 0.0;        //flyWheelOmega()
-
+//---------------------------------------------------------------------
 int dataCount = 0;            //loop()
 int motorPosition = 0;        //loop()
-
+//---------------------------------------------------------------------
 bool speedChange = false;     //loop()/interruptHandler
-
-float countArray [4000];
-float omegaArray [4000];
-float angleArray [4000];
-
+//---------------------------------------------------------------------
 void setup() {
   Serial.begin(115200);
   pinMode(ENCODERBUTTON, INPUT_PULLUP);
@@ -72,54 +69,45 @@ void setup() {
   motor.setAcceleration(10000);
   motor.setMaxSpeed(11000);
   degPerPulse = 360.0 / (float)PPR;
-
 }//END SETUP
 
 //---------------------------------------------------------------------
-int arrayCount = 0;
-
 void loop() {
   if (speedChange) {
-    buttonEnc.write(loopLastPosition); //Times by 384 for more accurate dialing
+    buttonEnc.write(loopLastPosition);    //Times by 384 for more accurate dialing
 
     while (speedChange) {
       motor.setSpeed(0);
-      motorSpeed = buttonEncReading(); //Divide by 384 for more accurate dialing
+      motorSpeed = buttonEncReading();    //Divide by 384 for more accurate dialing
       screenWriting(motorSpeed);
     }
-    loopLastPosition = motorSpeed;  //Saves the new speed so the screen always shows the right number
-    dataCount = 0;          //reseting datacount since it is a new speed
-    driveTimer = 0;         //Resets the driveTimer to zero
-    sgFilterOmega.resetValues();  //Resets the smoothing array
-    sgFilterAngle.resetValues();  //Resets the smoothing array
+    loopLastPosition = motorSpeed;           //Saves the new speed so the screen always shows the right number
+    dataCount = 0;                           //Resets datacount since it is a new speed
+    driveTimer = 0;                          //Resets the driveTimer to zero
+    sgFilterOmega.resetValues();             //Resets the smoothing array for omega
+    sgFilterAngle.resetValues();             //Resets the smoothing array for omega
   }
 
-  motorPosition = motor.currentPosition();
-
-  //Check if the flywheel is in a new position
+  motorPosition = motor.currentPosition();   //Check if the flywheel is in a new position
   if (motorPosition != motorOldPosition) {
-    dataCount++;    //Keeps track of each new data point for PoinCare Sections
-    //Serial.println(dataCount);
     newPosition = flyWheelEnc.read();
+    dataCount++;
 
     if (motorPosition % 200 == 0) { // The motor has made a full rotation
       dataCount = 0;
     }
-    if (dataCount == 50) {
+    
+    if (dataCount == 50) {                    //Prints out the data at the same specific point
       testing();
     }
 
-    newTime = flyWheelTimer;
-    fWOmega = flyWheelOmega();
-    motorOldPosition = motorPosition;
-    oldPosition = newPosition;
+    newTime = flyWheelTimer;                  //Saves the current time
+    fWOmega = flyWheelOmega();                //Calculates the flywheel omega
+    motorOldPosition = motorPosition;         //Saves the current motor position
+    oldPosition = newPosition;                //Saves the current flywheel position 
   }
-
-
-
-  motor.setSpeed(motorSpeed);
+  motor.setSpeed(motorSpeed);                 //Takes a step with the motor at the current speed
   motor.runSpeed();
-
 }//END LOOP
 
 //---------------------------------------------------------------------------
@@ -128,14 +116,13 @@ void loop() {
    Returns the omega value of the flywheel
 */
 float flyWheelOmega() {
-  fWOutput = (newPosition * degPerPulse); //Should return the current angle of the flywheel
-  deltaPhi = degPerPulse * (newPosition - oldPosition);  //Finding the omega of the flywheel
+  fWOutput = (newPosition * degPerPulse);      //Should return the current angle of the flywheel
+  deltaPhi = degPerPulse * (newPosition - oldPosition);
   deltaTime = float(newTime - oldTime) / float(1000000.0);
   omega = deltaPhi / deltaTime;
-  oldTime = newTime; //Saves the new data
+  oldTime = newTime;                          //Saves the new data
   oldPosition = newPosition;
   return omega;
-
 }//END FlyWheelRead
 
 //---------------------------------------------------------------------------
@@ -161,7 +148,6 @@ float buttonEncReading() {
   }
   interrupts();
   return encPosition;
-
 }//END buttonEncReading
 
 //---------------------------------------------------------------------------
@@ -192,7 +178,6 @@ void screenWriting(float motSpeed) {
 
 }//END ScreenWriting
 
-
 //---------------------------------------------------------------------------
 /**
    Tells the interupt which function to call depending on the the times the button has been pushed
@@ -201,15 +186,18 @@ void screenWriting(float motSpeed) {
 void interruptHandler() {
   unsigned long interrupt = millis();
 
-  //If a interupt happens before 200 milliseconds, ignore it
-  if (interrupt - lastInterrupt > 200) {
+  if (interrupt - lastInterrupt > 200) {         //If a interupt happens before 200 milliseconds, ignore it
     speedChange = !speedChange;
     lastInterrupt = interrupt;
   }
 }//END interruptHandler()
 
+//---------------------------------------------------------------------------
+/**
+ * A function used to print out values to serial to be saved later into a notepad
+ */
 void testing() {
-  Serial.print(driveTimer);      //Prints out the count for post processing in MatLab
+  Serial.print(driveTimer);                                       //Prints out the count for post processing in MatLab
   Serial.print(",");
   Serial.print(fWOmega, 8);
   Serial.print(",");
@@ -217,44 +205,5 @@ void testing() {
   Serial.print(",");
   Serial.print(sgFilterOmega.quadCubicSmooth(5, fWOmega), 8);     //Prints out the angluar frequency of the flywheel
   Serial.print(",");
-  Serial.println(sgFilterAngle.quadCubicSmooth(5, fWOutput), 8);    //Prints out the angle of the flywheel
+  Serial.println(sgFilterAngle.quadCubicSmooth(5, fWOutput), 8);   //Prints out the angle of the flywheel
 }
-////---------------------------------------------------------------------------
-///**
-//   Moves the motor with the encoder to be able to set the motor to reset point
-//*/
-//void motorReset() {
-//  Serial.println("Inside motorReset()");
-//
-//  int encPosition = buttonEnc.read();
-//  //  int motorPosition = motor.getPosition();
-//  //  Serial.print(motorPosition);
-//  Serial.print("  ,  ");
-//  Serial.println(encPosition);
-//  Serial.println("");
-//  if (encPosition > lastEncPosition) {
-//    //    motorPosition += 100;
-//    // controller.move(motor);
-//    Serial.println("Return from greater then move");
-//  } else if (encPosition < lastEncPosition) {
-//    //motorPosition += -100;
-//    //controller.move(motor);
-//    Serial.println("Return from less then move");
-//  }
-//  lastEncPosition = encPosition;
-//}
-//
-//
-////---------------------------------------------------------------------------
-///**
-//   Counts if the flywheel moved clockwise or counterclockwise
-//*/
-//int countMovement(float omegaValue) {
-//  if (omegaValue > 0) {
-//    movementCounter++;
-//  } else if (omegaValue < 0) {
-//    movementCounter--;
-//  }
-//  return movementCounter;
-//}//END CountMovement
-

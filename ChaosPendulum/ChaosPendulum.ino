@@ -203,7 +203,7 @@ void testing() {
   Serial.print(",");
   Serial.print(fWOutput, 8);
   Serial.print(",");
-  Serial.print(sgFilterOmega.quadCubicSmooth(5, fWOmega), 8);     //Prints out the angluar frequency of the flywheel
+  Serial.print(sgFilterOmega.smoothing(5, fWOmega, 0), 8);     //Prints out the angluar frequency of the flywheel
   Serial.print(",");
-  Serial.println(sgFilterAngle.quadCubicSmooth(5, fWOutput), 8);   //Prints out the angle of the flywheel
+  Serial.println(sgFilterAngle.smoothing(5, fWOutput, 0), 8);   //Prints out the angle of the flywheel
 }

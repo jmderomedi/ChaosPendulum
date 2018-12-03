@@ -29,6 +29,7 @@ Encoder flyWheelEnc(7, 6);
 TeensyView oled(PIN_RESET, PIN_DC, PIN_CS, PIN_SCK, PIN_MOSI);
 SavLayFilter sgFilterOmega = SavLayFilter();
 SavLayFilter sgFilterAngle = SavLayFilter();
+SavLayFilter sgFilterTheta = SavLayFilter();
 //---------------------------------------------------------------------
 elapsedMicros flyWheelTimer;
 elapsedMicros driveTimer;
@@ -86,6 +87,7 @@ void loop() {
     driveTimer = 0;                          //Resets the driveTimer to zero
     sgFilterOmega.resetValues();             //Resets the smoothing array for omega
     sgFilterAngle.resetValues();             //Resets the smoothing array for omega
+    sgFilterTheta.resetValues();
   }
 
   motorPosition = motor.currentPosition();   //Check if the flywheel is in a new position
@@ -100,7 +102,7 @@ void loop() {
     if (dataCount == 50) {                    //Prints out the data at the same specific point
       testing();
     }
-
+    testing();
     newTime = flyWheelTimer;                  //Saves the current time
     fWOmega = flyWheelOmega();                //Calculates the flywheel omega
     motorOldPosition = motorPosition;         //Saves the current motor position
@@ -199,11 +201,13 @@ void interruptHandler() {
 void testing() {
   Serial.print(driveTimer);                                       //Prints out the count for post processing in MatLab
   Serial.print(",");
-  Serial.print(fWOmega, 8);
-  Serial.print(",");
-  Serial.print(fWOutput, 8);
-  Serial.print(",");
+  //Serial.print(fWOmega, 8);
+  //Serial.print(",");
+  //Serial.print(fWOutput, 8);
+  //Serial.print(",");
   Serial.print(sgFilterOmega.smoothing(5, fWOmega, 0), 8);     //Prints out the angluar frequency of the flywheel
   Serial.print(",");
   Serial.println(sgFilterAngle.smoothing(5, fWOutput, 0), 8);   //Prints out the angle of the flywheel
+  //Serial.print(",");
+  //Serial.println(sgFilterTheta.smoothing(5, filteredOmega, 1), 8);    //Prints out the derivative of 
 }

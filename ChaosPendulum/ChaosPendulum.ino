@@ -44,9 +44,9 @@ unsigned long lastInterrupt = 0;
 float omega = 1.0;
 float fWOutput = 0.0;
 float degPerPulse = 0.0;
-float motorSpeed = 100.0;
+float motorSpeed = 50.0;
 float newPosition = 0.0;
-float loopLastPosition = 150;
+float loopLastPosition = 97.0;
 float oldPosition = -9999;
 float fWOmega = -9999;
 float lastPosition = -999;
@@ -61,16 +61,18 @@ bool speedChange = false;
 //---------------------------------------------------------------------
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   pinMode(ENCODERBUTTON, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(ENCODERBUTTON), interruptHandler, FALLING);
 
   oled.begin();
   oled.clear(PAGE);
-  motor.setAcceleration(10000);
-  motor.setMaxSpeed(11000);
+  motor.setAcceleration(3000);
+  motor.setMaxSpeed(10000);
 
   degPerPulse = 360.0 / (float)PPR;
+  Serial.println("CLEARDATA");
+  Serial.println("LABEL,angle,omega,fangle,fomega");
 }//END SETUP
 
 //---------------------------------------------------------------------
@@ -82,6 +84,7 @@ void loop() {
   motorPosition = motor.currentPosition();   //Check if the flywheel is in a new position
   if (motorPosition != motorOldPosition) {
     newPosition = flyWheelEnc.read();
+    dataCount++;
     fWOmega = calculateOmega();                //Calculates the flywheel omega
     motorOldPosition = motorPosition;         //Saves the current motor position
     oldPosition = newPosition;                //Saves the current flywheel positon
@@ -98,7 +101,7 @@ void loop() {
 */
 float calculateOmega() {
   newTime = flyWheelTimer;                  //Saves the current time
-  fWOutput = (newPosition * degPerPulse);      //Should return the current angle of the flywheel
+  fWOutput = (newPosition * degPerPulse) * M_PI / 180.0;      //Should return the current angle of the flywheel in rads
   deltaPhi = degPerPulse * (newPosition - oldPosition);
   deltaTime = float(newTime - oldTime) / float(1000000.0);
   omega = deltaPhi / deltaTime;
@@ -116,7 +119,7 @@ float buttonEncReading() {
   float encPosition = buttonEnc.read();
   noInterrupts();
   float maxPosition = 100000.0;
-  float minPosition = 0.0;
+  float minPosition = 50.0;
 
   if (encPosition < minPosition) {     //Forces the encoder to have a min value
     encPosition = minPosition;
@@ -179,13 +182,25 @@ void interruptHandler() {
 void printOutValues() {
   //Serial.print(driveTimer);
   //Serial.print(",");
-  //Serial.print(fWOmega, 8);
-  //Serial.print(",");
-  //Serial.println(fWOutput, 8);
-  //Serial.print(",");
-  Serial.print(sgFilterOmega.smoothing(5, fWOmega, 0), 8);
-  Serial.print(",");
-  Serial.println(sgFilterAngle.smoothing(5, fWOutput, 0), 8);
+
+
+  float filteredOmega = sgFilterOmega.smoothing(5, fWOmega, 0);
+  float filteredAngle = sgFilterAngle.smoothing(5, fWOutput, 0);
+  if ((dataCount % 200) == 47) {
+    Serial.print("DATA,");
+//    Serial.print(fWOutput, 8);
+//    Serial.print(",");
+//    Serial.print(fWOmega, 8);
+//    Serial.print(",");
+    Serial.print(filteredAngle, 8);
+    Serial.print(",");
+    Serial.println(filteredOmega, 8);
+
+  }
+  if (dataCount == 200) {
+    dataCount = 0;
+  }
+
   //Serial.print(",");
   //Serial.println(sgFilterTheta.smoothing(5, filteredOmega, 1), 8);
 }
@@ -199,11 +214,12 @@ void resetVariables() {
 }
 
 void buttonPushLoop() {
-  buttonEnc.write(loopLastPosition);    //Times by 384 for more accurate dialing
+  buttonEnc.write(loopLastPosition * 384);    //Times by 384 for more accurate dialing
 
   while (speedChange) {
     motor.setSpeed(0);
-    motorSpeed = buttonEncReading();    //Divide by 384 for more accurate dialing
+    motor.run();
+    motorSpeed = buttonEncReading() / 384;    //Divide by 384 for more accurate dialing
     screenWriting(motorSpeed);
   }
   loopLastPosition = motorSpeed;           //Saves the new speed so the screen always shows the right number

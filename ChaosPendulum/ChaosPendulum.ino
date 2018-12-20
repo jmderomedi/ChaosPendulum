@@ -223,6 +223,6 @@ void buttonPushLoop() {
     screenWriting(motorSpeed);
   }
   loopLastPosition = motorSpeed;           //Saves the new speed so the screen always shows the right number
-  resetVariables();
+  resetVariables();                       //Resets all important data when button is pushed
 }
 

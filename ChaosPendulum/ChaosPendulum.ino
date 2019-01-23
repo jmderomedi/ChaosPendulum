@@ -46,7 +46,7 @@ float fWOutput = 0.0;
 float degPerPulse = 0.0;
 float motorSpeed = 50.0;
 float newPosition = 0.0;
-float loopLastPosition = 97.0;
+float loopLastPosition = 150.0;
 float oldPosition = -9999;
 float fWOmega = -9999;
 float lastPosition = -999;
@@ -81,7 +81,7 @@ void loop() {
     buttonPushLoop();
   }
 
-  motorPosition = motor.currentPosition();   //Check if the flywheel is in a new position
+  motorPosition = motor.currentPosition()/4;   //Check if the flywheel is in a new position
   if (motorPosition != motorOldPosition) {
     newPosition = flyWheelEnc.read();
     dataCount++;
@@ -90,7 +90,7 @@ void loop() {
     oldPosition = newPosition;                //Saves the current flywheel positon
     printOutValues();
   }
-  motor.setSpeed(motorSpeed);                 //Takes a step with the motor at the current speed
+  motor.setSpeed(motorSpeed*4);                 //Takes a step with the motor at the current speed
   motor.runSpeed();
 }//END LOOP
 

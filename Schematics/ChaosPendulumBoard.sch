@@ -159,47 +159,47 @@
 <library name="personal">
 <packages>
 <package name="TEENSY_3.2_NO_BOTTOM">
-<pad name="GND" x="-7.62" y="16.51" drill="0.9652"/>
-<pad name="0" x="-7.62" y="13.97" drill="0.9652"/>
-<pad name="1" x="-7.62" y="11.43" drill="0.9652"/>
-<pad name="2" x="-7.62" y="8.89" drill="0.9652"/>
-<pad name="3" x="-7.62" y="6.35" drill="0.9652"/>
-<pad name="4" x="-7.62" y="3.81" drill="0.9652"/>
-<pad name="5" x="-7.62" y="1.27" drill="0.9652"/>
-<pad name="6" x="-7.62" y="-1.27" drill="0.9652"/>
-<pad name="7" x="-7.62" y="-3.81" drill="0.9652"/>
-<pad name="8" x="-7.62" y="-6.35" drill="0.9652"/>
-<pad name="9" x="-7.62" y="-8.89" drill="0.9652"/>
-<pad name="10" x="-7.62" y="-11.43" drill="0.9652"/>
-<pad name="11" x="-7.62" y="-13.97" drill="0.9652"/>
-<pad name="12" x="-7.62" y="-16.51" drill="0.9652"/>
-<pad name="13" x="7.62" y="-16.51" drill="0.9652"/>
-<pad name="14/A0" x="7.62" y="-13.97" drill="0.9652"/>
-<pad name="15/A1" x="7.62" y="-11.43" drill="0.9652"/>
-<pad name="16/A2" x="7.62" y="-8.89" drill="0.9652"/>
-<pad name="17/A3" x="7.62" y="-6.35" drill="0.9652"/>
-<pad name="18/A4" x="7.62" y="-3.81" drill="0.9652"/>
-<pad name="19/A5" x="7.62" y="-1.27" drill="0.9652"/>
-<pad name="20/A6" x="7.62" y="1.27" drill="0.9652"/>
-<pad name="21/A7" x="7.62" y="3.81" drill="0.9652"/>
-<pad name="22/A8" x="7.62" y="6.35" drill="0.9652"/>
-<pad name="23/A9" x="7.62" y="8.89" drill="0.9652"/>
-<pad name="3.3V" x="7.62" y="11.43" drill="0.9652"/>
-<pad name="AGND" x="7.62" y="13.97" drill="0.9652"/>
+<pad name="GND" x="-7.62" y="16.51" drill="0.9652" diameter="1.778"/>
+<pad name="0" x="-7.62" y="13.97" drill="0.9652" diameter="1.778"/>
+<pad name="1" x="-7.62" y="11.43" drill="0.9652" diameter="1.778"/>
+<pad name="2" x="-7.62" y="8.89" drill="0.9652" diameter="1.778"/>
+<pad name="3" x="-7.62" y="6.35" drill="0.9652" diameter="1.778"/>
+<pad name="4" x="-7.62" y="3.81" drill="0.9652" diameter="1.778"/>
+<pad name="5" x="-7.62" y="1.27" drill="0.9652" diameter="1.778"/>
+<pad name="6" x="-7.62" y="-1.27" drill="0.9652" diameter="1.778"/>
+<pad name="7" x="-7.62" y="-3.81" drill="0.9652" diameter="1.778"/>
+<pad name="8" x="-7.62" y="-6.35" drill="0.9652" diameter="1.778"/>
+<pad name="9" x="-7.62" y="-8.89" drill="0.9652" diameter="1.778"/>
+<pad name="10" x="-7.62" y="-11.43" drill="0.9652" diameter="1.778"/>
+<pad name="11" x="-7.62" y="-13.97" drill="0.9652" diameter="1.778"/>
+<pad name="12" x="-7.62" y="-16.51" drill="0.9652" diameter="1.778"/>
+<pad name="13" x="7.62" y="-16.51" drill="0.9652" diameter="1.778"/>
+<pad name="14/A0" x="7.62" y="-13.97" drill="0.9652" diameter="1.778"/>
+<pad name="15/A1" x="7.62" y="-11.43" drill="0.9652" diameter="1.778"/>
+<pad name="16/A2" x="7.62" y="-8.89" drill="0.9652" diameter="1.778"/>
+<pad name="17/A3" x="7.62" y="-6.35" drill="0.9652" diameter="1.778"/>
+<pad name="18/A4" x="7.62" y="-3.81" drill="0.9652" diameter="1.778"/>
+<pad name="19/A5" x="7.62" y="-1.27" drill="0.9652" diameter="1.778"/>
+<pad name="20/A6" x="7.62" y="1.27" drill="0.9652" diameter="1.778"/>
+<pad name="21/A7" x="7.62" y="3.81" drill="0.9652" diameter="1.778"/>
+<pad name="22/A8" x="7.62" y="6.35" drill="0.9652" diameter="1.778"/>
+<pad name="23/A9" x="7.62" y="8.89" drill="0.9652" diameter="1.778"/>
+<pad name="3.3V" x="7.62" y="11.43" drill="0.9652" diameter="1.778"/>
+<pad name="AGND" x="7.62" y="13.97" drill="0.9652" diameter="1.778"/>
 <wire x1="-8.89" y1="17.78" x2="8.89" y2="17.78" width="0.127" layer="21"/>
 <wire x1="8.89" y1="17.78" x2="8.89" y2="-17.78" width="0.127" layer="21"/>
 <wire x1="8.89" y1="-17.78" x2="-8.89" y2="-17.78" width="0.127" layer="21"/>
 <wire x1="-8.89" y1="-17.78" x2="-8.89" y2="17.78" width="0.127" layer="21"/>
 <wire x1="-1.27" y1="16.51" x2="1.27" y2="16.51" width="0.2032" layer="21"/>
 <wire x1="1.27" y1="16.51" x2="1.27" y2="17.78" width="0.2032" layer="21"/>
-<wire x1="16.51" y1="17.78" x2="16.51" y2="-17.78" width="0.2032" layer="49"/>
-<wire x1="16.51" y1="-17.78" x2="-20.32" y2="-17.78" width="0.2032" layer="49"/>
-<wire x1="-20.32" y1="-17.78" x2="-20.32" y2="17.78" width="0.2032" layer="49"/>
-<wire x1="-20.32" y1="17.78" x2="16.51" y2="17.78" width="0.2032" layer="49"/>
+<wire x1="10.16" y1="17.78" x2="10.16" y2="-17.78" width="0.2032" layer="49"/>
+<wire x1="10.16" y1="-17.78" x2="-10.16" y2="-17.78" width="0.2032" layer="49"/>
+<wire x1="-10.16" y1="-17.78" x2="-10.16" y2="17.78" width="0.2032" layer="49"/>
+<wire x1="-10.16" y1="17.78" x2="10.16" y2="17.78" width="0.2032" layer="49"/>
 <wire x1="-1.27" y1="17.78" x2="-1.27" y2="16.51" width="0.2032" layer="21"/>
 <text x="-3.81" y="13.97" size="1.27" layer="25" font="vector">&gt;NAME</text>
 <text x="-3.81" y="5.08" size="1.27" layer="27" font="vector">&gt;VALUE</text>
-<pad name="VIN" x="7.62" y="16.51" drill="0.9652"/>
+<pad name="VIN" x="7.62" y="16.51" drill="0.9652" diameter="1.778"/>
 </package>
 </packages>
 <symbols>
